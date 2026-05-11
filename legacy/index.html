@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIPF - AI Portfolio Generator</title>
+    <meta name="description" content="Generate stunning portfolios instantly using AI. Powered by the Kinetic Noir design system.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Noto+Serif:wght@500;600;700&family=Space+Grotesk:wght@600&family=Righteous&family=Outfit:wght@400;500;700&family=Oswald:wght@400;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=1.1">
+    
+    <!-- Three.js for 3D Background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    
+    <!-- GSAP for Smooth Scroll Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
+    
+    <!-- HTML2PDF for PDF Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+
+    <nav class="navbar">
+        <div class="logo">AIPF.</div>
+        <div class="nav-links">
+            <a href="#gallery" class="label-text">GALLERY</a>
+            <a href="#workspace" class="label-text">WORKSPACE</a>
+            <a href="#pricing" class="label-text">PRICING</a>
+        <div class="nav-actions" style="display: flex; gap: 16px;">
+            <button class="btn-ghost label-text">SIGN IN</button>
+            <button class="btn-primary label-text">START GENERATING</button>
+        </div>
+    </nav>
+
+    <main>
+        <section id="hero" class="hero-section">
+            <div class="hero-content">
+                <span class="badge label-text">NEW KINETIC NOIR ENGINE</span>
+                <h1 class="display-text hero-title">Intelligence<br>Meets Design.</h1>
+                <p class="body-text hero-desc">Describe your vision. Our AI builds a high-end, cinematic portfolio in seconds. Zero code. Infinite possibilities.</p>
+                <div class="hero-actions">
+                    <button class="btn-primary label-text btn-large" onclick="gsap.to(window, {duration: 1, scrollTo: '#workspace', ease: 'power3.inOut'})">BUILD YOUR PORTFOLIO</button>
+                    <button class="btn-ghost label-text btn-large" onclick="gsap.to(window, {duration: 1, scrollTo: '#gallery', ease: 'power3.inOut'})">EXPLORE TEMPLATES</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="workspace" class="workspace-section">
+            <div class="container">
+                <div class="workspace-header">
+                    <h2 class="headline-md">Workspace</h2>
+                    <p class="body-text">Command the AI to generate your layout, color scheme, and typography.</p>
+                </div>
+                
+                <div class="workspace-grid">
+                    <div class="ai-panel glass-panel">
+                        <div class="panel-header">
+                            <span class="label-text accent-color">AI GENERATOR</span>
+                            <div class="ai-status">Ready</div>
+                        </div>
+                        <div class="prompt-area">
+                            <input type="text" id="user-name" placeholder="Your Name" class="chat-input mb-4" style="width: 100%; padding: 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.2); color: white; font-family: var(--font-body); margin-bottom: 12px;">
+                            <input type="text" id="user-details" placeholder="Your Role (e.g., Creative Director)" class="chat-input mb-4" style="width: 100%; padding: 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.2); color: white; font-family: var(--font-body); margin-bottom: 16px;">
+                            <textarea id="ai-prompt" placeholder="Describe your ideal portfolio... e.g., 'A dark, minimalist photography portfolio focusing on brutalist architecture.'"></textarea>
+                            
+                            <button id="generate-btn" class="btn-primary label-text mt-4 w-full">GENERATE UI</button>
+                        </div>
+                        <div class="generation-progress" style="display: none; padding: 24px 0;">
+                            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                                <div class="agent-spinner">✨</div>
+                                <div>
+                                    <h4 class="headline-sm" style="font-size: 24px;">AI Agent</h4>
+                                    <span class="label-text accent-color">POWERED BY AI</span>
+                                </div>
+                            </div>
+                            <div class="agent-logs" style="font-family: var(--font-label); font-size: 12px; color: var(--on-surface-variant); height: 80px; overflow: hidden; display: flex; flex-direction: column; gap: 8px;">
+                                <!-- Logs will be injected here -->
+                            </div>
+                            <div class="progress-bar mt-4"><div class="progress-fill"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="preview-panel glass-panel">
+                        <div class="preview-toolbar">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <span class="label-text">LIVE PREVIEW</span>
+                                <div id="variant-selector" style="display: none; gap: 8px;">
+                                    <button class="variant-btn active" data-variant="1" style="background:transparent; border:1px solid var(--accent-lime); color:var(--accent-lime); padding: 4px 8px; font-size: 10px; cursor: pointer;">VARIANT 1</button>
+                                    <button class="variant-btn" data-variant="2" style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding: 4px 8px; font-size: 10px; cursor: pointer;">VARIANT 2</button>
+                                    <button class="variant-btn" data-variant="3" style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding: 4px 8px; font-size: 10px; cursor: pointer;">VARIANT 3</button>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <div id="window-controls" style="display: none; align-items: center; gap: 12px; margin-right: 16px; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 16px;">
+                                    <button id="toggle-expand-btn" class="label-text" style="background:transparent; border:none; color:var(--accent-lime); cursor:pointer; font-size: 18px; transition: transform 0.3s; display:flex; align-items:center; justify-content:center;" title="Expand/Collapse">⤢</button>
+                                    <button id="close-preview-btn" class="label-text" style="background:transparent; border:none; color:#ff4444; cursor:pointer; font-size: 18px; transition: color 0.3s; display:flex; align-items:center; justify-content:center;" title="Close Preview">✕</button>
+                                </div>
+                                <div class="device-toggles">
+                                    <span class="active">DESKTOP</span>
+                                    <span>MOBILE</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="preview-content" id="preview-container">
+                            <div class="empty-state">
+                                <div class="empty-icon">✨</div>
+                                <h3 class="headline-sm">Awaiting Instructions</h3>
+                                <p class="body-text">Enter a prompt to generate your portfolio preview.</p>
+                            </div>
+                        </div>
+                        <div class="preview-actions" id="preview-actions" style="display: none; justify-content: center; gap: 12px; padding-top: 24px;">
+                            <button id="download-pdf-btn" class="btn-primary label-text btn-large" style="flex: 1;">EXPORT PDF</button>
+                            <button id="download-png-btn" class="btn-primary label-text btn-large" style="flex: 1;">EXPORT PNG</button>
+                            <button id="download-jpg-btn" class="btn-primary label-text btn-large" style="flex: 1;">EXPORT JPG</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="gallery" class="gallery-section">
+            <div class="container">
+                <div class="gallery-header text-center mb-16">
+                    <h2 class="headline-lg">Featured Generations</h2>
+                    <p class="body-text mx-auto max-w-2xl mt-4">Discover what other creatives are building with our Kinetic Noir engine.</p>
+                </div>
+                
+                <div class="gallery-grid">
+                    <!-- Gallery items will be populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <section id="pricing" class="pricing-section">
+            <div class="container">
+                <div class="pricing-header text-center mb-16">
+                    <h2 class="headline-lg">Kinetic Access</h2>
+                    <p class="body-text mx-auto max-w-2xl mt-4">Choose the plan that fits your creative ambitions.</p>
+                </div>
+                
+                <div class="pricing-grid">
+                    <div class="pricing-card glass-panel">
+                        <h3 class="headline-sm">Pro</h3>
+                        <div class="price display-text" style="font-size: 64px;">$4.99<span class="body-text">/mo</span></div>
+                        <ul class="pricing-features">
+                            <li><span class="accent-color">✦</span> Unlimited Generations</li>
+                            <li><span class="accent-color">✦</span> 4K Export Quality</li>
+                            <li><span class="accent-color">✦</span> Custom Domains</li>
+                            <li><span class="accent-color">✦</span> Priority Rendering</li>
+                        </ul>
+                        <button class="btn-primary label-text w-full mt-4">UPGRADE TO PRO</button>
+                    </div>
+
+                    <div class="pricing-card glass-panel">
+                        <h3 class="headline-sm">Enterprise</h3>
+                        <div class="price display-text" style="font-size: 64px;">$99<span class="body-text">/mo</span></div>
+                        <ul class="pricing-features">
+                            <li><span class="accent-color">✦</span> Team Workspaces</li>
+                            <li><span class="accent-color">✦</span> White-label Exports</li>
+                            <li><span class="accent-color">✦</span> API Access</li>
+                            <li><span class="accent-color">✦</span> Dedicated Support</li>
+                        </ul>
+                        <button class="btn-ghost label-text w-full mt-4">CONTACT SALES</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="main.js"></script>
+</body>
+</html>

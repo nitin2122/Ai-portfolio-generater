@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Syne:wght@400;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+:root {
+  --background: #0a0a0b;
+  --surface: #121214;
+  --primary: #ccff00;
+  --secondary: #6366f1;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+body {
+  @apply bg-background text-white font-body antialiased selection:bg-primary selection:text-black;
+}
+
+h1, h2, h3, h4 {
+  @apply font-display tracking-tight;
+}
+
+.glass {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl;
+}
+
+.btn-primary {
+  @apply bg-primary text-black font-display font-bold uppercase tracking-wider px-8 py-4 rounded-lg 
+         hover:scale-105 hover:shadow-[0_0_30px_rgba(204,255,0,0.3)] transition-all duration-300;
+}
+
+.btn-outline {
+  @apply border border-white/20 hover:border-white hover:bg-white/5 font-display font-bold uppercase 
+         tracking-wider px-8 py-4 rounded-lg transition-all duration-300;
+}
+
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

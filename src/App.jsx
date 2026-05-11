@@ -29,6 +29,7 @@ function App() {
   const [themeData, setThemeData]     = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [variant, setVariant]         = useState(1);
+  const [templateId, setTemplateId]   = useState('kinetic-noir');
   const [history, setHistory]         = useState(loadHistory);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -243,11 +244,11 @@ function App() {
         />
 
         <Gallery
-          onSelect={(themePrompt) => {
-            // Immediately generate with selected template theme
+          onSelect={({ prompt: themePrompt, templateId, bg, accent, text }) => {
             const mergedData = { ...userData, prompt: themePrompt };
             setUserData(mergedData);
-            handleGenerate(mergedData, { forceRefresh: true });
+            setTemplateId(templateId);
+            handleGenerate(mergedData, { forceRefresh: true, templateId });
             setTimeout(() => {
               const ws = document.getElementById('workspace');
               if (ws) ws.scrollIntoView({ behavior: 'smooth' });
@@ -333,6 +334,7 @@ function App() {
             userData={userData}
             variant={variant}
             setVariant={setVariant}
+            templateId={templateId}
             onExport={handleExport}
             onClose={() => setThemeData(null)}
             isPro={isPro}

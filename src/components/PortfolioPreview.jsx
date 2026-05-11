@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, AnimatePresence, useMotionValueEvent } from 'framer-motion';
 import { Download, X, ChevronDown, FileImage, FileText, Sparkles } from 'lucide-react';
+import { KineticNoir, Luminary, Luminous, Zen, NeonGrid } from './PortfolioTemplates';
 
 // ─── Floating Toolbar (always on top, never clipped) ────────────────────────
 function FloatingToolbar({ variant, setVariant, accent, onExport, onClose, userName, isPro, onDeploy }) {
@@ -200,7 +201,15 @@ function FloatingToolbar({ variant, setVariant, accent, onExport, onClose, userN
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
-export default function PortfolioPreview({ themeData, userData, variant, setVariant, onExport, onClose, isPro, onDeploy }) {
+const TEMPLATE_MAP = {
+  'kinetic-noir':      KineticNoir,
+  'luminary':          Luminary,
+  'luminous-gradient': Luminous,
+  'zen-minimal':       Zen,
+  'neon-grid':         NeonGrid,
+};
+
+export default function PortfolioPreview({ themeData, userData, variant, setVariant, templateId = 'kinetic-noir', onExport, onClose, isPro, onDeploy }) {
   const scrollRef = useRef(null);
   const { scrollYProgress } = useScroll({ container: scrollRef });
   const [progressValue, setProgressValue] = useState(0);
@@ -227,20 +236,24 @@ export default function PortfolioPreview({ themeData, userData, variant, setVari
     return () => clearTimeout(t);
   }, [variant, themeData]);
 
-  // Load fonts — deduplicated so switching variants never double-inserts the same link
+  // Load fonts for selected template + all 5 template fonts eagerly
   useEffect(() => {
-    if (!themeData) return;
-    const { fontDisplay, fontBody } = themeData;
-    if (!fontDisplay || !fontBody) return;
-    const href = `https://fonts.googleapis.com/css2?family=${fontDisplay.replace(/['\s]/g, '+')}:wght@400;700;900&family=${fontBody.replace(/['\s]/g, '+')}:wght@300;400;700;800&display=swap`;
-    // Only inject if not already present (prevents FOUC on variant switches)
-    if (document.querySelector(`link[href="${href}"]`)) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = href;
-    document.head.appendChild(link);
-    // Keep the font loaded even after unmount so text doesn't re-flash
-  }, [themeData]);
+    const fonts = [
+      'Space+Grotesk:wght@400;700;900',
+      'Manrope:wght@300;400;700;800',
+      'Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700',
+      'Inter:wght@300;400;700;900',
+      'DM+Sans:wght@300;400;600;700',
+      'Space+Mono:wght@400;700',
+    ];
+    const href = `https://fonts.googleapis.com/css2?${fonts.map(f => `family=${f}`).join('&')}&display=swap`;
+    if (!document.querySelector(`link[data-aipf-fonts]`)) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet'; link.href = href;
+      link.setAttribute('data-aipf-fonts', '1');
+      document.head.appendChild(link);
+    }
+  }, []);
 
   if (!themeData) return null;
 
@@ -434,9 +447,7 @@ export default function PortfolioPreview({ themeData, userData, variant, setVari
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `radial-gradient(800px circle at 50% 0%, ${accent}06, transparent 60%)`, zIndex: 0 }} />
 
           <div id="portfolio-content-inner" style={{ position: 'relative', zIndex: 1 }}>
-            {variant === 1 && renderV1()}
-            {variant === 2 && renderV2()}
-            {variant === 3 && renderV3()}
+            {(() => { const T = TEMPLATE_MAP[templateId] || KineticNoir; return <T t={themeData} u={userData} />; })()}
           </div>
         </div>
 

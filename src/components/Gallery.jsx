@@ -509,7 +509,7 @@ export default function Gallery({ onSelect }) {
                 key={t.id}
                 onMouseEnter={() => setHovered(t.id)}
                 onMouseLeave={() => setHovered(null)}
-                onClick={() => onSelect(t.prompt)}
+                onClick={() => onSelect({ prompt: t.prompt, templateId: t.id, bg: t.bg, accent: t.accent, text: t.text })}
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}

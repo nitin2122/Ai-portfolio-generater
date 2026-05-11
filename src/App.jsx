@@ -89,9 +89,9 @@ function App() {
       if (format === 'pdf') {
         const opened = printAsPDF(themeData, userData, variant);
         if (!opened) {
-          showToast('Please allow popups to export PDF — check your browser bar.', 'error');
+          showToast('❌ Could not open print dialog. Try "Download HTML" instead.', 'error');
         } else {
-          showToast('Print dialog opening — choose "Save as PDF" in your browser.', 'success');
+          showToast('🖨️ Print dialog opening — select "Save as PDF" in your browser.', 'success');
         }
       } else {
         downloadAsHTML(themeData, userData, variant);

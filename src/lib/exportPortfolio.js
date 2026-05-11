@@ -189,16 +189,60 @@ export function downloadAsHTML(themeData, userData, variant) {
 }
 
 /**
- * printAsPDF — opens portfolio in a new tab so user can Ctrl+P / Save as PDF
+ * printAsPDF — injects a hidden iframe, writes the portfolio HTML into it,
+ * then calls print() on it. This bypasses popup blockers AND Vercel CSP headers
+ * that kill window.open(). The iframe lives inside the same page context.
  */
 export function printAsPDF(themeData, userData, variant) {
   const html = buildPortfolioHTML(themeData, userData, variant);
-  const win = window.open('', '_blank');
-  if (!win) return false; // popup blocked
-  win.document.write(html);
-  win.document.close();
-  win.addEventListener('load', () => {
-    setTimeout(() => win.print(), 500);
-  });
-  return true;
+
+  // Remove any previous print iframe
+  const old = document.getElementById('__aipf_print_frame__');
+  if (old) old.remove();
+
+  const iframe = document.createElement('iframe');
+  iframe.id = '__aipf_print_frame__';
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;visibility:hidden;';
+  document.body.appendChild(iframe);
+
+  try {
+    // Write HTML into the iframe document
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+
+    // Wait for fonts/layout to settle, then trigger print dialog
+    const doPrint = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (e) {
+        // Last-resort: data URI in new tab if iframe print fails
+        try {
+          const b64 = btoa(unescape(encodeURIComponent(html)));
+          window.open(`data:text/html;base64,${b64}`, '_blank');
+        } catch (_) {}
+      }
+      // Clean up after print dialog closes (delay to allow print to start)
+      setTimeout(() => iframe.remove(), 5000);
+    };
+
+    if (iframe.contentDocument.readyState === 'complete') {
+      setTimeout(doPrint, 400);
+    } else {
+      iframe.contentWindow.onload = () => setTimeout(doPrint, 400);
+    }
+    return true;
+  } catch (e) {
+    iframe.remove();
+    // Fallback to data URI tab
+    try {
+      const b64 = btoa(unescape(encodeURIComponent(html)));
+      const opened = window.open(`data:text/html;base64,${b64}`, '_blank');
+      return !!opened;
+    } catch (_) {
+      return false;
+    }
+  }
 }
+

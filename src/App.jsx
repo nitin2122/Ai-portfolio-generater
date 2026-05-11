@@ -12,65 +12,39 @@ import { downloadAsHTML, printAsPDF } from './lib/exportPortfolio';
 import { generatePortfolioData } from './lib/gemini';
 import { cachedGenerate, invalidateCache } from './lib/apiCache';
 import { useAuth } from './contexts/AuthContext';
-// Razorpay import removed — payment integration is Coming Soon
 
-// Load history from localStorage, max 20 items
+// ─── localStorage helpers ────────────────────────────────────────────────────
 const loadHistory = () => {
-  try {
-    return JSON.parse(localStorage.getItem('portfolio-history') || '[]');
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem('portfolio-history') || '[]'); }
+  catch { return []; }
 };
-
-
 const saveHistory = (history) => {
-  try {
-    localStorage.setItem('portfolio-history', JSON.stringify(history));
-  } catch {
-    // Storage quota exceeded – fail silently
-  }
+  try { localStorage.setItem('portfolio-history', JSON.stringify(history)); }
+  catch { /* quota exceeded – fail silently */ }
 };
 
+// ─── App ─────────────────────────────────────────────────────────────────────
 function App() {
-  const [userData, setUserData] = useState({ name: '', role: '', prompt: '' });
-  const [themeData, setThemeData] = useState(null);
+  const [userData, setUserData]       = useState({ name: '', role: '', prompt: '' });
+  const [themeData, setThemeData]     = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [variant, setVariant] = useState(1);
-  const [history, setHistory] = useState(loadHistory);
+  const [variant, setVariant]         = useState(1);
+  const [history, setHistory]         = useState(loadHistory);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [toast, setToast]             = useState(null);
   const containerRef = useRef(null);
-  const { isAuthenticated, isPro, updateProStatus, user } = useAuth();
-  // Razorpay hook removed — payment integration Coming Soon
+  const { isAuthenticated, isPro } = useAuth();
 
   const showToast = (msg, type = 'error') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 5000);
   };
 
-  // ─── Pro Upgrade — Coming Soon ─────────────────────────────────────────────
-  // Payment integration (Razorpay) is not yet live. Show a friendly Coming Soon
-  // notification so users know it's on the roadmap.
-  const handleUpgrade = () => {
-    if (!isAuthenticated) {
-      setIsAuthModalOpen(true);
-      showToast('Please sign in first — then watch this space!', 'error');
-      return;
-    }
-    if (isPro) {
-      showToast('You are already a Pro user!', 'success');
-      return;
-    }
-    showToast('🚀 Pro payments coming soon — stay tuned!', 'success');
-  };
-
-  // ─── Generation ────────────────────────────────────────────────────────────
+  // ─── Generate ──────────────────────────────────────────────────────────────
   const handleGenerate = async (data, { forceRefresh = false } = {}) => {
     setUserData(data);
     setIsGenerating(true);
-
     if (forceRefresh) invalidateCache(data);
 
     try {
@@ -105,32 +79,23 @@ function App() {
     }
   };
 
-
-  // ─── Export ─────────────────────────────────────────────────────────────────
+  // ─── Export — FREE for all users, no sign-in required ─────────────────────
   const handleExport = async (format) => {
-    if (!isAuthenticated) {
-      setIsAuthModalOpen(true);
-      showToast('Please sign in to download your portfolio', 'error');
-      return;
-    }
     if (!themeData) {
       showToast('Generate a portfolio first.', 'error');
       return;
     }
-
     try {
       if (format === 'pdf') {
-        // Opens portfolio in new tab → browser native Print → Save as PDF
         const opened = printAsPDF(themeData, userData, variant);
         if (!opened) {
-          showToast('Please allow popups for this site to export PDF.', 'error');
+          showToast('Please allow popups to export PDF — check your browser bar.', 'error');
         } else {
-          showToast('Print dialog opening — choose “Save as PDF” in your browser.', 'success');
+          showToast('Print dialog opening — choose "Save as PDF" in your browser.', 'success');
         }
       } else {
-        // HTML download — works in all browsers, no CORS issues
         downloadAsHTML(themeData, userData, variant);
-        showToast(`Portfolio downloaded as HTML! Open in any browser.`, 'success');
+        showToast('✅ Portfolio downloaded as HTML! Open it in any browser.', 'success');
       }
     } catch (err) {
       console.error('[Export] error:', err);
@@ -138,20 +103,23 @@ function App() {
     }
   };
 
-  // ─── History actions ─────────────────────────────────────────────────────────
+  // ─── Pro Upgrade — Coming Soon ─────────────────────────────────────────────
+  const handleUpgrade = () => {
+    showToast('🚀 Pro tier coming soon — payment integration in progress!', 'success');
+  };
+
+  // ─── History actions ───────────────────────────────────────────────────────
   const handleRestoreHistory = (item) => {
     setUserData(item.userData);
     setThemeData(item.themeData);
     setVariant(1);
     setIsHistoryOpen(false);
   };
-
   const handleDeleteHistory = (id) => {
     const updated = history.filter((h) => h.id !== id);
     setHistory(updated);
     saveHistory(updated);
   };
-
   const handleClearHistory = () => {
     setHistory([]);
     saveHistory([]);
@@ -159,14 +127,12 @@ function App() {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-[#0a0a0b] overflow-x-hidden text-white">
-      {/* Background3D only visible on landing — hidden once preview opens via CSS z-index */}
       {!themeData && <Background3D />}
       <Navbar onAuthClick={() => setIsAuthModalOpen(true)} />
 
-      {/* Auth Modal */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
 
-      {/* Toast notification */}
+      {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -178,10 +144,7 @@ function App() {
             style={{
               background: toast.type === 'error' ? 'rgba(30,10,10,0.9)' : 'rgba(10,30,10,0.9)',
               borderColor: toast.type === 'error' ? 'rgba(255,80,80,0.3)' : 'rgba(80,255,80,0.3)',
-              color: '#fff',
-              maxWidth: '90vw',
-              fontSize: '12px',
-              fontWeight: 600,
+              color: '#fff', maxWidth: '90vw', fontSize: '12px', fontWeight: 600,
             }}
           >
             <span style={{ color: toast.type === 'error' ? '#ff6b6b' : '#6bff6b', fontSize: '16px' }}>
@@ -193,8 +156,7 @@ function App() {
         )}
       </AnimatePresence>
 
-
-      {/* Floating History Button — bottom-right so it never collides with Navbar logo (top-left) */}
+      {/* Floating History Button — bottom-right */}
       <motion.button
         onClick={() => setIsHistoryOpen(true)}
         whileHover={{ scale: 1.05 }}
@@ -211,7 +173,6 @@ function App() {
         )}
       </motion.button>
 
-      {/* History Panel */}
       <HistoryPanel
         isOpen={isHistoryOpen}
         history={history}
@@ -265,7 +226,6 @@ function App() {
             </motion.div>
           </div>
 
-          {/* Scroll Indicator */}
           <motion.div
             className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4"
             animate={{ y: [0, 10, 0] }}
@@ -282,12 +242,16 @@ function App() {
           setUserData={setUserData}
         />
 
-        {/* PortfolioPreview moved outside main — see below */}
-
         <Gallery
           onSelect={(themePrompt) => {
-            setUserData((prev) => ({ ...prev, prompt: themePrompt }));
-            document.getElementById('workspace').scrollIntoView({ behavior: 'smooth' });
+            // Immediately generate with selected template theme
+            const mergedData = { ...userData, prompt: themePrompt };
+            setUserData(mergedData);
+            handleGenerate(mergedData, { forceRefresh: true });
+            setTimeout(() => {
+              const ws = document.getElementById('workspace');
+              if (ws) ws.scrollIntoView({ behavior: 'smooth' });
+            }, 300);
           }}
         />
 
@@ -361,7 +325,7 @@ function App() {
         </div>
       </footer>
 
-      {/* Portfolio preview — rendered at ROOT level, outside <main>, so fixed z-index works correctly */}
+      {/* Portfolio preview — at ROOT level so fixed positioning works */}
       <AnimatePresence>
         {themeData && (
           <PortfolioPreview
@@ -385,7 +349,6 @@ function App() {
                 return;
               }
               showToast('Deploying to custom URL... (Simulated)', 'success');
-              // Logic for actual deployment would go here
             }}
           />
         )}

@@ -162,16 +162,30 @@ export function buildPortfolioHTML(themeData, userData, variant = 1) {
  */
 export function downloadAsHTML(themeData, userData, variant) {
   const html = buildPortfolioHTML(themeData, userData, variant);
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
   const safeName = (userData?.name || 'Portfolio').replace(/\s+/g, '_');
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${safeName}_Portfolio_V${variant}.html`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  const fileName = `${safeName}_Portfolio_V${variant}.html`;
+
+  // Use data: URI — works in all browsers + Vercel CSP (no blob: needed)
+  try {
+    const b64 = btoa(unescape(encodeURIComponent(html)));
+    const link = document.createElement('a');
+    link.href = `data:text/html;charset=utf-8;base64,${b64}`;
+    link.download = fileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    return true;
+  } catch (e) {
+    // Absolute fallback: open in new tab so user can Save As
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.document.title = fileName;
+    }
+    return !!win;
+  }
 }
 
 /**

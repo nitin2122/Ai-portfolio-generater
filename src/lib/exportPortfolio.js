@@ -158,35 +158,47 @@ export function buildPortfolioHTML(themeData, userData, variant = 1) {
 }
 
 /**
- * downloadAsHTML — download the portfolio as a .html file
+ * downloadAsHTML — three-tier fallback download.
+ * Blob URL works for <a download> even under strict CSP (CSP only blocks navigation TO blob, not downloads).
  */
 export function downloadAsHTML(themeData, userData, variant) {
   const html = buildPortfolioHTML(themeData, userData, variant);
   const safeName = (userData?.name || 'Portfolio').replace(/\s+/g, '_');
   const fileName = `${safeName}_Portfolio_V${variant}.html`;
 
-  // Use data: URI — works in all browsers + Vercel CSP (no blob: needed)
+  // Tier 1: Blob URL (most reliable, works everywhere for downloads)
   try {
-    const b64 = btoa(unescape(encodeURIComponent(html)));
-    const link = document.createElement('a');
-    link.href = `data:text/html;charset=utf-8;base64,${b64}`;
-    link.download = fileName;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
     return true;
-  } catch (e) {
-    // Absolute fallback: open in new tab so user can Save As
-    const win = window.open('', '_blank');
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.document.title = fileName;
-    }
-    return !!win;
-  }
-}
+  } catch (_) {}
+
+  // Tier 2: data URI (no special chars risk since we encode properly)
+  try {
+    const encoded = encodeURIComponent(html);
+    const a = document.createElement('a');
+    a.href = `data:text/html;charset=utf-8,${encoded}`;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return true;
+  } catch (_) {}
+
+  // Tier 3: open in new tab — user can Ctrl+S / Save As
+  const w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); w.document.title = fileName; }
+  return !!w;
+
+
 
 /**
  * printAsPDF — injects a hidden iframe, writes the portfolio HTML into it,

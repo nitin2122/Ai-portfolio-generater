@@ -45,7 +45,7 @@ function FloatingToolbar({ variant, setVariant, accent, onExport, onClose, userN
         background: 'rgba(255,255,255,0.95)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        padding: '10px 20px',
+        padding: '8px 12px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -53,7 +53,8 @@ function FloatingToolbar({ variant, setVariant, accent, onExport, onClose, userN
         position: 'relative',
         zIndex: 100,
         flexShrink: 0,
-        gap: '12px',
+        gap: '8px',
+        flexWrap: 'wrap',
       }}>
         {/* Left: traffic lights + label */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
@@ -257,12 +258,12 @@ export default function PortfolioPreview({ themeData, userData, variant, setVari
 
   // ─── Variant 1: Kinetic Noir (Full-bleed dark) ─────────────────────────
   const renderV1 = () => (
-    <div style={{ padding: '100px 60px', minHeight: '100%' }}>
-      <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '140px', alignItems: 'center' }}>
-        <div style={{ fontFamily: fontDisplay, fontSize: '28px', fontWeight: 900, letterSpacing: '-0.02em', color: text }}>
+    <div style={{ padding: 'clamp(32px, 6vw, 100px) clamp(20px, 5vw, 60px)', minHeight: '100%' }}>
+      <motion.nav initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'clamp(60px, 10vw, 140px)', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ fontFamily: fontDisplay, fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: 900, letterSpacing: '-0.02em', color: text }}>
           {firstName}<span style={{ color: accent }}>.</span>
         </div>
-        <div style={{ display: 'flex', gap: '40px', fontSize: '10px', fontWeight: 800, letterSpacing: '2px', color: text }}>
+        <div style={{ display: 'flex', gap: 'clamp(16px, 3vw, 40px)', fontSize: '10px', fontWeight: 800, letterSpacing: '2px', color: text, flexWrap: 'wrap' }}>
           {['PROJECTS', 'STUDIO', 'JOURNAL'].map(n => (
             <motion.span key={n} whileHover={{ color: accent }} style={{ cursor: 'pointer', opacity: 0.6, transition: 'color 0.3s' }}>{n}</motion.span>
           ))}
@@ -275,14 +276,14 @@ export default function PortfolioPreview({ themeData, userData, variant, setVari
             <div style={{ width: '40px', height: '1px', background: accent }} />
             <span style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '5px', color: accent, textTransform: 'uppercase' }}>{role}</span>
           </div>
-          <h1 style={{ fontFamily: fontDisplay, fontSize: 'clamp(48px, 8vw, 120px)', lineHeight: 0.88, marginBottom: '48px', fontWeight: 900, letterSpacing: '-0.05em', color: text }}>
+          <h1 style={{ fontFamily: fontDisplay, fontSize: 'clamp(36px, 8vw, 120px)', lineHeight: 0.88, marginBottom: '48px', fontWeight: 900, letterSpacing: '-0.05em', color: text }}>
             {bio ? bio.split(' ').slice(0, 3).join(' ').toUpperCase() : firstName.toUpperCase()}<br />
             <span style={{ color: accent }}>{bio ? bio.split(' ').slice(3, 6).join(' ').toUpperCase() + '.' : 'PORTFOLIO.'}</span>
           </h1>
         </motion.div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '80px', marginBottom: '160px' }}>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 0.65 }} style={{ fontSize: '18px', lineHeight: 1.6, color: text }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'clamp(32px, 6vw, 80px)', marginBottom: 'clamp(80px, 12vw, 160px)' }}>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 0.65 }} style={{ fontSize: 'clamp(14px, 2vw, 18px)', lineHeight: 1.6, color: text }}>
             {bio || `${name} is a creative professional specializing in ${role}.`}
           </motion.p>
           <div>
@@ -301,13 +302,13 @@ export default function PortfolioPreview({ themeData, userData, variant, setVari
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
             {experience.map((exp, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 60 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ margin: '-80px' }} whileHover={{ x: 12 }} style={{ cursor: 'pointer' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '40px 0', borderBottom: `1px solid ${text}12` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: 'clamp(20px, 4vw, 40px) 0', borderBottom: `1px solid ${text}12`, flexWrap: 'wrap', gap: '12px' }}>
                   <div>
                     <div style={{ fontSize: '9px', fontWeight: 900, color: accent, letterSpacing: '3px', marginBottom: '12px' }}>0{i + 1} // {exp.duration || ''}</div>
-                    <h2 style={{ fontFamily: fontDisplay, fontSize: 'clamp(32px, 5vw, 64px)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: text }}>{(exp?.role || 'Expert').toUpperCase()}</h2>
+                    <h2 style={{ fontFamily: fontDisplay, fontSize: 'clamp(22px, 5vw, 64px)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: text }}>{(exp?.role || 'Expert').toUpperCase()}</h2>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '16px', fontWeight: 800, color: accent, marginBottom: '6px' }}>{exp?.company || ''}</div>
+                    <div style={{ fontSize: 'clamp(12px, 2vw, 16px)', fontWeight: 800, color: accent, marginBottom: '6px' }}>{exp?.company || ''}</div>
                     <div style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '3px', color: text, opacity: 0.3, textTransform: 'uppercase' }}>View →</div>
                   </div>
                 </div>
@@ -321,32 +322,32 @@ export default function PortfolioPreview({ themeData, userData, variant, setVari
 
   // ─── Variant 2: Editorial Split (Asymmetric magazine) ──────────────────
   const renderV2 = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '100vh' }}>
-      <div style={{ padding: '80px 60px', borderRight: `1px solid ${text}10`, position: 'sticky', top: 0, height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <motion.div whileHover={{ scale: 1.03 }} style={{ fontFamily: fontDisplay, fontSize: '28px', fontWeight: 900, cursor: 'pointer', color: text }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', minHeight: '100vh' }}>
+      <div style={{ padding: 'clamp(32px, 5vw, 80px) clamp(20px, 4vw, 60px)', borderRight: `1px solid ${text}10`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '40px', minHeight: '300px' }}>
+        <motion.div whileHover={{ scale: 1.03 }} style={{ fontFamily: fontDisplay, fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: 900, cursor: 'pointer', color: text }}>
           {firstName}
         </motion.div>
         <div>
           <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '5px', color: accent, textTransform: 'uppercase', marginBottom: '16px' }}>{role}</div>
-          <h1 style={{ fontFamily: fontDisplay, fontSize: 'clamp(40px, 5vw, 72px)', lineHeight: 1, fontWeight: 900, letterSpacing: '-0.04em', marginBottom: '32px', color: text }}>
+          <h1 style={{ fontFamily: fontDisplay, fontSize: 'clamp(32px, 5vw, 72px)', lineHeight: 1, fontWeight: 900, letterSpacing: '-0.04em', marginBottom: '32px', color: text }}>
             {aboutText ? aboutText.split(' ').slice(0, 2).join(' ').toUpperCase() : 'CRAFTING'}<br />
             {aboutText ? aboutText.split(' ').slice(2, 4).join(' ').toUpperCase() : 'DIGITAL'}<br />
             <span style={{ color: accent }}>{aboutText ? aboutText.split(' ').slice(4, 6).join(' ').toUpperCase() + '.' : 'POETRY.'}</span>
           </h1>
           <p style={{ fontSize: '15px', opacity: 0.55, maxWidth: '380px', lineHeight: 1.6, color: text }}>{bio}</p>
         </div>
-        <div style={{ display: 'flex', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           {skills.slice(0, 3).map(s => (
             <span key={s} style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '3px', color: accent, textTransform: 'uppercase' }}>{s}</span>
           ))}
         </div>
       </div>
-      <div style={{ padding: '80px 60px' }}>
+      <div style={{ padding: 'clamp(32px, 5vw, 80px) clamp(20px, 4vw, 60px)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {experience.map((exp, i) => (
             <motion.div key={i} initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} whileHover={{ backgroundColor: `${accent}08` }} style={{ borderBottom: `1px solid ${text}10`, padding: '28px', borderRadius: '12px', transition: '0.3s' }}>
               <div style={{ fontSize: '9px', fontWeight: 900, color: text, opacity: 0.25, letterSpacing: '3px', marginBottom: '8px', textTransform: 'uppercase' }}>{exp.duration}</div>
-              <h2 style={{ fontFamily: fontDisplay, fontSize: '32px', fontWeight: 700, marginBottom: '10px', color: text }}>{exp?.company || ''}</h2>
+              <h2 style={{ fontFamily: fontDisplay, fontSize: 'clamp(20px, 3vw, 32px)', fontWeight: 700, marginBottom: '10px', color: text }}>{exp?.company || ''}</h2>
               <div style={{ color: accent, fontWeight: 800, fontSize: '12px', marginBottom: '16px', letterSpacing: '1px' }}>{(exp?.role || '').toUpperCase()}</div>
               <p style={{ opacity: 0.5, fontSize: '13px', lineHeight: 1.6, color: text }}>{exp.description || 'Pushing boundaries through design and innovation.'}</p>
             </motion.div>
@@ -359,28 +360,28 @@ export default function PortfolioPreview({ themeData, userData, variant, setVari
   // ─── Variant 3: Centered Monumental ────────────────────────────────────
   const renderV3 = () => (
     <div>
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 60px' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 'clamp(60px, 8vw, 120px) clamp(20px, 5vw, 60px)' }}>
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1.2 }}>
           <div style={{ color: accent, fontSize: '10px', fontWeight: 900, letterSpacing: '8px', marginBottom: '28px' }}>{role.toUpperCase()}</div>
-          <h1 style={{ fontFamily: fontDisplay, fontSize: 'clamp(64px, 10vw, 160px)', lineHeight: 0.82, fontWeight: 900, letterSpacing: '-0.07em', color: text }}>
+          <h1 style={{ fontFamily: fontDisplay, fontSize: 'clamp(48px, 10vw, 160px)', lineHeight: 0.82, fontWeight: 900, letterSpacing: '-0.07em', color: text }}>
             {firstName}<br />{lastName}
           </h1>
           <div style={{ width: '80px', height: '1px', background: text, margin: '48px auto', opacity: 0.12 }} />
-          <p style={{ maxWidth: '520px', fontSize: '16px', opacity: 0.45, lineHeight: 1.6, color: text }}>{bio}</p>
+          <p style={{ maxWidth: '520px', fontSize: 'clamp(13px, 2vw, 16px)', opacity: 0.45, lineHeight: 1.6, color: text }}>{bio}</p>
         </motion.div>
       </div>
 
       {experience.length > 0 && (
-        <div style={{ padding: '120px 60px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '24px' }}>
+        <div style={{ padding: 'clamp(60px, 8vw, 120px) clamp(20px, 5vw, 60px)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
             {experience.map((exp, i) => (
-              <div key={i} style={{ gridColumn: i % 2 === 0 ? '1 / span 7' : '6 / span 7', marginBottom: '100px' }}>
+              <div key={i} style={{ marginBottom: 'clamp(40px, 6vw, 100px)' }}>
                 <motion.div initial={{ opacity: 0, y: 80 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ margin: '-80px' }} whileHover={{ y: -8 }}>
                   <div style={{ aspectRatio: '16/9', background: `${accent}08`, marginBottom: '28px', borderRadius: '8px', overflow: 'hidden', position: 'relative', border: `1px solid ${text}08` }}>
                     <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${accent}12, transparent)` }} />
                     <div style={{ position: 'absolute', bottom: '28px', left: '28px' }}>
                       <div style={{ fontSize: '9px', fontWeight: 900, color: accent, letterSpacing: '2px', marginBottom: '6px' }}>PROJECT // 0{i + 1}</div>
-                      <div style={{ fontFamily: fontDisplay, fontSize: '24px', fontWeight: 700, color: text }}>{exp?.company || ''}</div>
+                      <div style={{ fontFamily: fontDisplay, fontSize: 'clamp(16px, 3vw, 24px)', fontWeight: 700, color: text }}>{exp?.company || ''}</div>
                     </div>
                   </div>
                 </motion.div>
@@ -408,7 +409,7 @@ export default function PortfolioPreview({ themeData, userData, variant, setVari
         style={{
           width: '100%', maxWidth: '1400px', height: '90vh',
           background: bg, color: text, overflow: 'hidden',
-          position: 'relative', borderRadius: '24px',
+          position: 'relative', borderRadius: '16px',
           boxShadow: `0 60px 160px -40px ${accent}30, 0 0 0 1px rgba(255,255,255,0.06)`,
           display: 'flex', flexDirection: 'column',
         }}

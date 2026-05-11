@@ -156,42 +156,55 @@ function App() {
       return;
     }
 
-    // Target the inner content div so html2canvas sees the full document height,
-    // not just the clipped viewport of the scrollable modal container.
-    const element =
-      document.getElementById('portfolio-content-inner') ||
-      document.getElementById('capture-area');
-
-    if (!element) {
-      // FIX: toast is a React state object, not a library — use showToast()
+    const source = document.getElementById('portfolio-content-inner');
+    if (!source) {
       showToast('Capture area not found — open the preview first.', 'error');
       return;
     }
 
-    try {
-      // Clamp at 16 000 px to avoid OOM on very long portfolios
-      const fullHeight = Math.min(element.scrollHeight, 16000);
+    showToast('Preparing export…', 'success');
 
-      const canvas = await html2canvas(element, {
+    try {
+      // Clone the element into an off-screen container that is NOT inside
+      // overflow:hidden — this lets html2canvas see the full scroll height.
+      const clone = source.cloneNode(true);
+      const wrapper = document.createElement('div');
+      const captureWidth = Math.min(source.scrollWidth, 1400);
+      Object.assign(wrapper.style, {
+        position: 'fixed',
+        top: '0',
+        left: '-9999px',
+        width: `${captureWidth}px`,
+        height: 'auto',
+        overflow: 'visible',
+        zIndex: '-1',
+        background: themeData?.bg || '#000000',
+        fontFamily: source.style.fontFamily || 'inherit',
+      });
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+
+      // Wait one frame for layout to settle
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      const fullHeight = Math.min(wrapper.scrollHeight, 16000);
+
+      const canvas = await html2canvas(wrapper, {
         scale: 2,
         useCORS: true,
         allowTaint: false,
         logging: false,
         backgroundColor: themeData?.bg || '#000000',
-        // scrollY must be 0 here: we are supplying the element's full scrollHeight
-        // as the explicit `height`, so html2canvas renders from the top of the
-        // element — not from the viewport scroll position.  Using
-        // getBoundingClientRect().top is wrong for elements inside a fixed modal
-        // (the value is unrelated to the element's own scroll offset) and causes
-        // a partial or blank capture in production builds.
-        width: element.offsetWidth,
+        width: captureWidth,
         height: fullHeight,
-        windowWidth: element.offsetWidth,
+        windowWidth: captureWidth,
         windowHeight: fullHeight,
-        scrollY: 0,
         scrollX: 0,
-        imageTimeout: 15000, // Give Google Fonts / remote assets up to 15s to load
+        scrollY: 0,
+        imageTimeout: 15000,
       });
+
+      document.body.removeChild(wrapper);
 
       const safeName = (userData.name || 'Portfolio').replace(/\s+/g, '_');
 
@@ -201,7 +214,6 @@ function App() {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pageHeightMm = pdf.internal.pageSize.getHeight();
         const imgHeightMm = (canvas.height * pdfWidth) / canvas.width;
-        // FIX: paginate across multiple A4 pages instead of squashing everything
         let yOffset = 0;
         while (yOffset < imgHeightMm) {
           if (yOffset > 0) pdf.addPage();
@@ -209,30 +221,22 @@ function App() {
           yOffset += pageHeightMm;
         }
         pdf.save(`${safeName}_Portfolio.pdf`);
-        showToast('Portfolio downloaded successfully!', 'success');
+        showToast('PDF downloaded!', 'success');
       } else {
-        // FIX: 'jpeg' is not a valid MIME type — must be 'image/jpeg'.
-        // Passing the raw format string caused silent fallback to PNG blobs
-        // in Firefox/Safari, resulting in files that failed to open.
         const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
         const quality  = format === 'jpeg' ? 0.92 : undefined;
-        const dataUrl  = quality
-          ? canvas.toDataURL(mimeType, quality)
-          : canvas.toDataURL(mimeType);
-
+        const dataUrl  = quality ? canvas.toDataURL(mimeType, quality) : canvas.toDataURL(mimeType);
         const link = document.createElement('a');
         link.download = `${safeName}_Portfolio.${format}`;
         link.href = dataUrl;
-        // FIX: appending to body before .click() is required by Safari/Firefox
-        // to reliably trigger the file-save dialog.
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        showToast('Portfolio downloaded successfully!', 'success');
+        showToast('Image downloaded!', 'success');
       }
     } catch (err) {
-      console.error('[Export] html2canvas error:', err);
-      showToast('Export failed. Please check your browser permissions.', 'error');
+      console.error('[Export] error:', err);
+      showToast('Export failed. Please try again.', 'error');
     }
   };
 
@@ -292,12 +296,12 @@ function App() {
       </AnimatePresence>
 
 
-      {/* Floating History Button — always rendered; z-[2001] lifts it above the preview modal (z-[2000]) */}
+      {/* Floating History Button — bottom-right so it never collides with Navbar logo (top-left) */}
       <motion.button
         onClick={() => setIsHistoryOpen(true)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed top-8 left-6 z-[2001] flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-xl text-white/70 hover:text-white hover:border-primary/40 transition-all duration-300"
+        className="fixed bottom-6 right-6 z-[2001] flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-black/70 backdrop-blur-xl text-white/70 hover:text-white hover:border-primary/40 transition-all duration-300"
         style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '2px' }}
       >
         <Clock size={13} />

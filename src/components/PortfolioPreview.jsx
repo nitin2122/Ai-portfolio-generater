@@ -165,9 +165,8 @@ function FloatingToolbar({ variant, setVariant, accent, onExport, onClose, userN
             <div style={{ height: '1px', background: '#e5e5e5', margin: '4px 0' }} />
 
             {[
-              { fmt: 'pdf', icon: FileText, label: 'Download PDF', sub: 'A4 · Print-ready' },
-              { fmt: 'png', icon: FileImage, label: 'Download PNG', sub: 'High-res · 2×' },
-              { fmt: 'jpeg', icon: FileImage, label: 'Download JPEG', sub: 'Web · Compressed' },
+              { fmt: 'pdf',  icon: FileText,  label: 'Save as PDF',  sub: 'Opens print dialog' },
+              { fmt: 'html', icon: FileImage, label: 'Download HTML', sub: 'Self-contained · All browsers' },
             ].map(({ fmt, icon: Icon, label, sub }) => (
               <button
                 key={fmt}

@@ -6,24 +6,52 @@ const API_KEY = rawApiKey ? rawApiKey.trim().replace(/^["']|["']$/g, '') : null;
 
 const genAI = (API_KEY && API_KEY !== 'YOUR_API_KEY_HERE') ? new GoogleGenerativeAI(API_KEY) : null;
 
+// ─── Fallback demo data (used when ALL API models fail / quota exceeded) ──────
+const buildFallback = (userData, isTemplate2) => ({
+  bg: isTemplate2 ? '#F2F2F2' : '#0a0a0b',
+  text: isTemplate2 ? '#1a1a1a' : '#f5f5f5',
+  accent: isTemplate2 ? '#000000' : '#ccff00',
+  fontDisplay: isTemplate2 ? 'Cormorant Garamond' : 'Playfair Display',
+  fontBody: isTemplate2 ? 'Inter' : 'Manrope',
+  vibe: 'Cinematic precision — the portfolio speaks before you do.',
+  bio: `${userData.name} is a visionary ${userData.role} who transforms complex ideas into elegant, high-impact solutions. With a relentless focus on craft and an instinct for the future, every project is a statement.`,
+  aboutText: `Driven by curiosity and precision, ${userData.name} operates at the intersection of art and technology.`,
+  skills: ['Design Systems', 'Creative Direction', 'Product Strategy', 'UI Engineering', 'Brand Identity', 'Motion Design'],
+  experience: [
+    { role: userData.role, company: 'Freelance Studio', duration: '2022–Present', description: 'Leading end-to-end creative strategy and execution for global clients.' },
+    { role: 'Senior Designer', company: 'Innovation Lab', duration: '2019–2022', description: 'Shaped the visual identity and product experience for a rapidly growing platform.' },
+    { role: 'Design Lead', company: 'Creative Agency', duration: '2017–2019', description: 'Delivered award-winning campaigns across digital and physical touchpoints.' },
+  ],
+  imagePrompts: [
+    'Abstract 3D architectural render in dark noir aesthetic',
+    'Minimalist editorial studio photography',
+    'Technical geometric detail shot',
+  ],
+  _isFallback: true,
+});
+
 export const generatePortfolioData = async (userData) => {
   if (!genAI) {
-    console.error("Gemini API Key missing or invalid in environment.");
-    throw new Error("API Key Error: VITE_GEMINI_API_KEY is not defined in your .env file or is invalid.");
+    console.warn("[Neural Engine] No API key — using demo portfolio data.");
+    const isTemplate2 = userData.prompt?.includes('TEMPLATE_2');
+    return buildFallback(userData, isTemplate2);
   }
 
-  // Current stable Gemini models (verified 2025)
+  // Priority order: 2.5-flash (best free quota) → 1.5-flash → 2.0-flash → 1.5-pro
+  // gemini-2.5-flash-preview-04-17 is the latest high-quota free model
   const modelNames = [
+    "gemini-2.5-flash-preview-04-17",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-8b",
     "gemini-2.0-flash",
     "gemini-2.0-flash-lite",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro"
+    "gemini-1.5-pro",
   ];
+
   let lastError = null;
 
   for (const modelName of modelNames) {
     try {
-      const isTemplate1 = userData.prompt?.includes('TEMPLATE_1');
       const isTemplate2 = userData.prompt?.includes('TEMPLATE_2');
 
       const templateRules = isTemplate2 ? `
@@ -66,51 +94,71 @@ export const generatePortfolioData = async (userData) => {
 
         ${templateRules}
         
-        Return ONLY a JSON object with this exact structure:
+        Return ONLY a JSON object with this exact structure, no markdown:
         {
           "bg": "${isTemplate2 ? '#F2F2F2' : '#0a0a0b'}",
           "text": "${isTemplate2 ? '#1a1a1a' : '#f5f5f5'}",
           "accent": "${isTemplate2 ? '#000000' : '#ccff00'}",
           "fontDisplay": "${isTemplate2 ? 'Cormorant Garamond' : 'Playfair Display'}",
           "fontBody": "${isTemplate2 ? 'Inter' : 'Manrope'}",
-          "vibe": "Detailed description of the design aesthetic and movement",
-          "bio": "A sophisticated, narrative-driven bio for the user",
-          "aboutText": "A narrative about intellectual rigor and design precision",
+          "vibe": "Detailed description of the design aesthetic",
+          "bio": "A sophisticated, narrative-driven bio for the user (2-3 sentences)",
+          "aboutText": "A narrative about design philosophy (1-2 sentences)",
           "skills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5", "Skill 6"],
           "experience": [
-            { "role": "Role", "company": "Company", "duration": "Year-Year", "description": "High-impact description" }
+            { "role": "Role Title", "company": "Company Name", "duration": "Year-Year", "description": "High-impact 1-sentence description" }
           ],
           "imagePrompts": [
             "Specific 3D abstract render prompt matching the theme",
-            "Minimalist editorial photography prompt matching the theme",
-            "Technical detail prompt matching the theme"
+            "Minimalist editorial photography prompt",
+            "Technical detail prompt"
           ]
         }
-        
-        Do not include any markdown formatting, just the raw JSON.
       `;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
       
-      // Robust JSON extraction
-      const jsonStart = text.indexOf('{');
-      const jsonEnd = text.lastIndexOf('}') + 1;
-      if (jsonStart === -1 || jsonEnd === -1) throw new Error("Invalid AI response format");
+      // Robust JSON extraction — strip any markdown code fences
+      const cleaned = text.replace(/```json?\n?/g, '').replace(/```\n?/g, '').trim();
+      const jsonStart = cleaned.indexOf('{');
+      const jsonEnd = cleaned.lastIndexOf('}') + 1;
+      if (jsonStart === -1 || jsonEnd === 0) throw new Error("Invalid AI response format");
       
-      const jsonStr = text.substring(jsonStart, jsonEnd);
-      return JSON.parse(jsonStr);
+      const jsonStr = cleaned.substring(jsonStart, jsonEnd);
+      const parsed = JSON.parse(jsonStr);
+      console.log(`[Neural Engine] ✅ Success with ${modelName}`);
+      return parsed;
+
     } catch (error) {
-      console.error(`Neural Link ${modelName} failed:`, error);
+      const errMsg = error?.message || '';
+      console.warn(`[Neural Engine] ${modelName} failed:`, errMsg);
       lastError = error;
+
+      // On quota errors (429) or model not found (404), try next model
+      if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') ||
+          errMsg.includes('404') || errMsg.includes('not found')) {
+        console.log(`[Neural Engine] Quota/model issue, trying next...`);
+        // Small delay before retrying to avoid hammering the API
+        await new Promise(r => setTimeout(r, 800));
+        continue;
+      }
+
+      // On API key errors, fail immediately — no point trying other models
+      if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('403') ||
+          errMsg.includes('401') || errMsg.includes('API key')) {
+        console.error('[Neural Engine] Invalid API key — using fallback data.');
+        const isTemplate2 = userData.prompt?.includes('TEMPLATE_2');
+        return buildFallback(userData, isTemplate2);
+      }
+
       continue;
     }
   }
 
-  if (lastError?.message?.includes('API_KEY_INVALID') || lastError?.message?.includes('403')) {
-    throw new Error("API Key Error: The provided Gemini API key is invalid or lacks permissions. Please check your Google AI Studio console.");
-  }
-
-  throw lastError || new Error("Synthesis failed. Check network or API key permissions.");
+  // All models exhausted — use intelligent fallback so user still sees a result
+  console.warn('[Neural Engine] All models exhausted — using demo portfolio data.');
+  const isTemplate2 = userData.prompt?.includes('TEMPLATE_2');
+  return buildFallback(userData, isTemplate2);
 };

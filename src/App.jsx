@@ -8,8 +8,7 @@ import HistoryPanel from './components/HistoryPanel';
 import AuthModal from './components/AuthModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+import { downloadAsHTML, printAsPDF } from './lib/exportPortfolio';
 import { generatePortfolioData } from './lib/gemini';
 import { cachedGenerate, invalidateCache } from './lib/apiCache';
 import { useAuth } from './contexts/AuthContext';
@@ -72,16 +71,18 @@ function App() {
     setUserData(data);
     setIsGenerating(true);
 
-    // Bust the cache if the user explicitly wants a fresh result
     if (forceRefresh) invalidateCache(data);
 
     try {
-      // Route through cache: identical prompts within 10 min reuse localStorage.
-      // A 3-second min-interval guard prevents loop-driven quota exhaustion.
       const result = await cachedGenerate(data, () => generatePortfolioData(data));
       setThemeData(result);
 
-      // Persist to history (newest first, max 20)
+      if (result._isFallback) {
+        showToast('⚡ API quota reached — showing demo portfolio. Your info is applied!', 'success');
+      } else {
+        showToast('✨ Portfolio generated!', 'success');
+      }
+
       const newEntry = {
         id: Date.now().toString(),
         createdAt: new Date().toISOString(),
@@ -97,56 +98,13 @@ function App() {
         if (previewEl) previewEl.scrollIntoView({ behavior: 'smooth' });
       }, 500);
     } catch (error) {
-      console.error('Neural synthesis failed', error);
-      const isTemplate2 = data.prompt?.includes('TEMPLATE_2');
-      const fallback = isTemplate2 ? {
-        bg: '#faf7f2',
-        text: '#1a1614',
-        accent: '#c4933f',
-        fontDisplay: 'Cormorant Garamond',
-        fontBody: 'Inter',
-        bio: `${data.name} is an award-winning ${data.role} who bridges the gap between creative vision and technical excellence. With a philosophy rooted in editorial precision, every project is a narrative told through craft.`,
-        aboutText: `A deliberate and precise approach to ${data.role} that elevates brands into cultural conversations.`,
-        skills: ['Brand Strategy', 'Visual Design', 'Typography', 'Art Direction', 'Motion Design', 'UX Research'],
-        experience: [
-          { role: data.role || 'Lead Designer', company: 'Atelier Studio', duration: '2023 — Present', description: 'Leading creative direction for premium brand identities across luxury, fashion, and architecture sectors.' },
-          { role: 'Senior Designer', company: 'Monograph Co.', duration: '2020 — 2023', description: 'Designed editorial systems and visual identities for international publications and cultural institutions.' },
-          { role: 'Designer', company: 'Freelance', duration: '2017 — 2020', description: 'Independent practice focused on brand development, print design, and digital experiences.' },
-        ],
-        imagePrompts: ['warm editorial photography', 'serif typography on cream paper', 'golden hour architectural detail'],
-      } : {
-        bg: '#0a0a0b',
-        text: '#f5f5f5',
-        accent: '#ccff00',
-        fontDisplay: 'Space Grotesk',
-        fontBody: 'Inter',
-        bio: `${data.name} is a high-performance ${data.role} architecting the future of digital experiences. Every pixel is a decision. Every interaction, a statement.`,
-        aboutText: `Technical precision meets creative ambition. ${data.name} builds systems that scale.`,
-        skills: ['Strategy', 'Design Systems', 'Prototyping', 'Code', 'Creative Direction', 'Motion'],
-        experience: [
-          { role: data.role || 'Creative Technologist', company: 'Kinetic Labs', duration: '2023 — Present', description: 'Building next-generation design tools and interactive experiences at the intersection of AI and design.' },
-          { role: 'Lead Developer', company: 'Noir Studio', duration: '2021 — 2023', description: 'Led a team of 8 engineers shipping high-performance web applications for Fortune 500 clients.' },
-          { role: 'Designer & Developer', company: 'Freelance', duration: '2018 — 2021', description: 'Independent practice specializing in cinematic web experiences, WebGL, and interaction design.' },
-        ],
-        imagePrompts: ['dark abstract 3D render', 'neon grid technical visualization', 'futuristic noir architecture'],
-      };
-      setThemeData(fallback);
-
-      const newEntry = {
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        userData: data,
-        themeData: fallback,
-      };
-      const updated = [newEntry, ...history].slice(0, 20);
-      setHistory(updated);
-      saveHistory(updated);
-
-      showToast('API quota exceeded – showing fallback design. Set a valid VITE_GEMINI_API_KEY to enable live generation.');
+      console.error('Neural synthesis failed:', error);
+      showToast('Generation failed. Please try again.', 'error');
     } finally {
       setIsGenerating(false);
     }
   };
+
 
   // ─── Export ─────────────────────────────────────────────────────────────────
   const handleExport = async (format) => {
@@ -155,84 +113,24 @@ function App() {
       showToast('Please sign in to download your portfolio', 'error');
       return;
     }
-
-    const source = document.getElementById('portfolio-content-inner');
-    if (!source) {
-      showToast('Capture area not found — open the preview first.', 'error');
+    if (!themeData) {
+      showToast('Generate a portfolio first.', 'error');
       return;
     }
 
-    showToast('Preparing export…', 'success');
-
     try {
-      // Clone the element into an off-screen container that is NOT inside
-      // overflow:hidden — this lets html2canvas see the full scroll height.
-      const clone = source.cloneNode(true);
-      const wrapper = document.createElement('div');
-      const captureWidth = Math.min(source.scrollWidth, 1400);
-      Object.assign(wrapper.style, {
-        position: 'fixed',
-        top: '0',
-        left: '-9999px',
-        width: `${captureWidth}px`,
-        height: 'auto',
-        overflow: 'visible',
-        zIndex: '-1',
-        background: themeData?.bg || '#000000',
-        fontFamily: source.style.fontFamily || 'inherit',
-      });
-      wrapper.appendChild(clone);
-      document.body.appendChild(wrapper);
-
-      // Wait one frame for layout to settle
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-      const fullHeight = Math.min(wrapper.scrollHeight, 16000);
-
-      const canvas = await html2canvas(wrapper, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        backgroundColor: themeData?.bg || '#000000',
-        width: captureWidth,
-        height: fullHeight,
-        windowWidth: captureWidth,
-        windowHeight: fullHeight,
-        scrollX: 0,
-        scrollY: 0,
-        imageTimeout: 15000,
-      });
-
-      document.body.removeChild(wrapper);
-
-      const safeName = (userData.name || 'Portfolio').replace(/\s+/g, '_');
-
       if (format === 'pdf') {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pageHeightMm = pdf.internal.pageSize.getHeight();
-        const imgHeightMm = (canvas.height * pdfWidth) / canvas.width;
-        let yOffset = 0;
-        while (yOffset < imgHeightMm) {
-          if (yOffset > 0) pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, -yOffset, pdfWidth, imgHeightMm);
-          yOffset += pageHeightMm;
+        // Opens portfolio in new tab → browser native Print → Save as PDF
+        const opened = printAsPDF(themeData, userData, variant);
+        if (!opened) {
+          showToast('Please allow popups for this site to export PDF.', 'error');
+        } else {
+          showToast('Print dialog opening — choose “Save as PDF” in your browser.', 'success');
         }
-        pdf.save(`${safeName}_Portfolio.pdf`);
-        showToast('PDF downloaded!', 'success');
       } else {
-        const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-        const quality  = format === 'jpeg' ? 0.92 : undefined;
-        const dataUrl  = quality ? canvas.toDataURL(mimeType, quality) : canvas.toDataURL(mimeType);
-        const link = document.createElement('a');
-        link.download = `${safeName}_Portfolio.${format}`;
-        link.href = dataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToast('Image downloaded!', 'success');
+        // HTML download — works in all browsers, no CORS issues
+        downloadAsHTML(themeData, userData, variant);
+        showToast(`Portfolio downloaded as HTML! Open in any browser.`, 'success');
       }
     } catch (err) {
       console.error('[Export] error:', err);
